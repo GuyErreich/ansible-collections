@@ -1,0 +1,38 @@
+name: Publish Release - Staging
+
+on:
+  push:
+    tags:
+      - "*.*.*-rc"
+
+concurrency:
+  group: publish-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create prerelease
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Get GitHub App Token
+        uses: ./.github/actions/app-authentication
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: GH Release
+        uses: ./.github/actions/gh-release
+        with:
+          github_token: ${{ steps.app-token.outputs.token }}

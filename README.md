@@ -32,7 +32,8 @@ Versioning is **lock-step** across both collections via [Action-Semver-Control](
 
 1. Merge to `dev` / `staging` / `main` → action opens a `Release X.Y.Z` PR (updates both `galaxy.yml` + `CHANGELOG.md`).
 2. Merge the release PR → action tags `X.Y.Z` (or `X.Y.Z-dev` / `X.Y.Z-rc`).
-3. Stable tags (no `-dev` / `-rc`) publish both collections to [galaxy.ansible.com](https://galaxy.ansible.com).
+3. Stable tags (no `-dev` / `-rc`) trigger **Publish Release - Production** (GitHub Release + Galaxy publish).
+4. `-rc` tags trigger **Publish Release - Staging** (GitHub prerelease only).
 
 ## Secret setup (maintainers)
 
