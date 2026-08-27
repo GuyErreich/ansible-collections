@@ -1,6 +1,6 @@
 # Local secret / vault material — never commit
 *.secret.yml
-extra-vars.yml
+/extra-vars.yml
 .vault_pass
 .vault_pass.txt
 
