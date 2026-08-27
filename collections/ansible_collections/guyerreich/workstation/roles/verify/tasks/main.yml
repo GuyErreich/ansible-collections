@@ -28,7 +28,12 @@
 
 - name: Read GitHub credential helper config
   ansible.builtin.command:
-    cmd: git config --global --get-all credential.https://github.com.helper
+    argv:
+      - git
+      - config
+      - --global
+      - --get-all
+      - credential.https://github.com.helper
   register: workstation_verify_git_helper
   changed_when: false
   failed_when: false

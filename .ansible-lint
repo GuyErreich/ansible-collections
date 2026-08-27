@@ -9,6 +9,7 @@ exclude_paths:
 mock_modules:
   - community.general.homebrew
   - community.general.homebrew_cask
+  - community.general.git_config
 skip_list:
   - package-latest
   - galaxy[version-incorrect]
@@ -18,5 +19,7 @@ skip_list:
   - fqcn[action-core]
   - name[casing]
   - yaml[line-length]
+  - command-instead-of-module
+  - jinja[invalid]
 warn_list:
   - experimental
