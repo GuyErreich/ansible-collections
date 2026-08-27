@@ -29,7 +29,7 @@ commit_groups:
       - "^feat.*!:"
       - "^fix.*!:"
     priority: 1
-    
+
   # New features and enhancements
   - title: "✨ Features & Enhancements"
     match_groups:
@@ -57,7 +57,7 @@ commit_groups:
       - "^Supports "
       - "^Supported "
     priority: 2
-    
+
   # Code refactoring and quality improvements
   - title: "♻️ Refactoring & Code Quality"
     match_groups:
@@ -85,7 +85,7 @@ commit_groups:
       - "^Ensure "
       - "^Ensured "
     priority: 3
-    
+
   # Infrastructure, tooling, and maintenance
   - title: "🔧 Infrastructure & Tooling"
     match_groups:
@@ -115,7 +115,7 @@ commit_groups:
       - "^deps?(\\([^)]*\\))?:"
       - "^docker(\\([^)]*\\))?:"
     priority: 4
-    
+
   # Bug fixes and resolutions
   - title: "🐛 Bug Fixes & Resolutions"
     match_groups:
@@ -133,7 +133,7 @@ commit_groups:
       - "^hotfix(\\([^)]*\\))?:"
       - "^patch(\\([^)]*\\))?:"
     priority: 5
-    
+
   # Testing improvements
   - title: "🧪 Testing"
     match_groups:
@@ -147,7 +147,7 @@ commit_groups:
       - "^Unit test[s]?"
       - "^Integration test[s]?"
     priority: 6
-    
+
   # Documentation updates
   - title: "📚 Documentation"
     match_groups:
@@ -162,7 +162,7 @@ commit_groups:
       - "^API "
       - "^Code comments "
     priority: 7
-    
+
   # Performance improvements
   - title: "⚡ Performance"
     match_groups:
@@ -183,7 +183,7 @@ commit_groups:
       - "^\\*\\* [0-9].*"                           # Artifacts like "** 25-01-2026" or "** 1.3.5-dev"
       - "^[0-9]+\\.[0-9]+\\.[0-9]+.*"               # Version numbers only
     priority: 90
-    
+
   # Catch-all for unmatched commits
   - title: "📝 Other Changes"
     patterns:
@@ -196,16 +196,16 @@ pull_request:
     - "semver-bump"
   body: |
     ## 🚀 Release Notes
-    **Version:** {{version}}  
+    **Version:** {{version}}
     **Date:** {{date}}
-    
+
     {% for group in commit_groups -%}
     {% if group.title != "Ignore" and group.commits -%}
     ### {{ group.title }}
     {% for commit in group.commits -%}
     - {{ commit.title }}
     {% endfor -%}
-    
+
     {% endif -%}
     {% endfor -%}
 
@@ -214,14 +214,14 @@ changelog:
   truncate: true
   template: |
     ## [{{version}}] - {{date}}
-    
+
     {% for group in grouped_messages -%}
     {% if group.title != "Ignore" and group.commits -%}
     ### {{ group.title }}
     {% for commit in group.commits -%}
     - {{ commit.title }}
     {% endfor -%}
-    
+
     {% endif -%}
     {% endfor -%}
 

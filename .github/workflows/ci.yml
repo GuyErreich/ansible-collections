@@ -10,6 +10,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/collections
+  ANSIBLE_BECOME_ASK_PASS: "False"
+  ANSIBLE_LOCAL_TEMP: /tmp/ansible-guyerreich-local
+
 jobs:
   architecture-guard:
     name: No per-OS roles
@@ -107,24 +112,13 @@ jobs:
       - name: Install Ansible
         run: |
           python -m pip install --upgrade pip
-          pip install ansible-core ansible-lint
+          pip install ansible-core
           pip install -r collections/ansible_collections/guyerreich/outputs/requirements.txt
 
-      - name: Build and install collection
+      - name: Unit tests (from source tree)
         working-directory: collections/ansible_collections/guyerreich/outputs
-        run: |
-          ansible-galaxy collection build --output-path /tmp/out-dist
-          ansible-galaxy collection install /tmp/out-dist/*.tar.gz -p "$HOME/.ansible/collections"
+        run: ansible-test units --python 3.12 --requirements -v
 
-      - name: Unit tests
-        run: |
-          COLLECTION="$HOME/.ansible/collections/ansible_collections/guyerreich/outputs"
-          cd "$COLLECTION"
-          ansible-test units --python 3.12 --requirements -v || ansible-test units --python 3.12 -v
-
-      - name: Sanity (local python)
-        run: |
-          COLLECTION="$HOME/.ansible/collections/ansible_collections/guyerreich/outputs"
-          cd "$COLLECTION"
-          ansible-test sanity --python 3.12 --skip-test pylint --skip-test pep8 -v || \
-          ansible-test sanity --python 3.12 -v
+      - name: Sanity (local python, from source tree)
+        working-directory: collections/ansible_collections/guyerreich/outputs
+        run: ansible-test sanity --python 3.12 --skip-test pylint --skip-test pep8 -v

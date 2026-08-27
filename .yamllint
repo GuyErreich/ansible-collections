@@ -7,7 +7,12 @@ rules:
     allow-non-breakable-inline-mappings: true
   document-start: disable
   truthy:
-    allowed-values: ["true", "false"]
+    allowed-values: ["true", "false", "on"]
+  comments:
+    min-spaces-from-content: 1
 
 ignore: |
   .git/
+  .github/workflows/
+  .github/actions/
+  auto_semver_config.yml
