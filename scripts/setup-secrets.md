@@ -31,3 +31,7 @@ gh secret list --repo GuyErreich/ansible-collections
 ```
 
 You should see `GALAXY_API_KEY`, `GH_APP_ID`, and `GH_APP_PRIVATE_KEY`.
+
+## 5. Install Auto Semver Bot on this repo
+
+Install the same GitHub App used by Action-Semver-Control on `GuyErreich/ansible-collections`, then swap the **Locked Branches** ruleset bypass actor from Admin to that Integration (id `2720857`) so release automation can update `staging` / `main`.
