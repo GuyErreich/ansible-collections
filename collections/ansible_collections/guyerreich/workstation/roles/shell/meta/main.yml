@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: shell
+  author: Guy Erreich
+  description: Install op_gh zsh snippet and retire broken op plugin aliases.
+  license: MIT
+  min_ansible_version: "2.16"
+dependencies: []

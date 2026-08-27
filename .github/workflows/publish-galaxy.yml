@@ -1,0 +1,46 @@
+name: Publish to Ansible Galaxy
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+      - '!*.*.*-rc'
+      - '!*.*.*-dev'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.collection }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        collection: [outputs, workstation]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core
+
+      - name: Build and publish
+        working-directory: collections/ansible_collections/guyerreich/${{ matrix.collection }}
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GALAXY_API_KEY:-}" ]]; then
+            echo "GALAXY_API_KEY secret is not set" >&2
+            exit 1
+          fi
+          ansible-galaxy collection build --output-path dist
+          ansible-galaxy collection publish dist/*.tar.gz --token "$GALAXY_API_KEY"

@@ -1,0 +1,45 @@
+---
+# Bootstrap a local workstation (macOS, Ubuntu, or WSL).
+#
+# Usage:
+#   ansible-galaxy collection install -r requirements.yml
+#   ansible-playbook playbooks/bootstrap.yml
+#
+# Non-interactive (example):
+#   ansible-playbook playbooks/bootstrap.yml \
+#     -e onepassword_skip_guide=true \
+#     -e @examples/extra-vars.yml
+#
+# Partial re-run:
+#   ansible-playbook playbooks/bootstrap.yml --tags shell,git
+
+- name: Bootstrap workstation
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  roles:
+    - role: guyerreich.workstation.platform
+      tags:
+        - always
+        - platform
+    - role: guyerreich.workstation.brew
+      tags:
+        - brew
+    - role: guyerreich.workstation.github_cli
+      tags:
+        - gh
+        - github_cli
+    - role: guyerreich.workstation.onepassword
+      tags:
+        - 1password
+        - onepassword
+    - role: guyerreich.workstation.gitconfig
+      tags:
+        - git
+        - gitconfig
+    - role: guyerreich.workstation.shell
+      tags:
+        - shell
+    - role: guyerreich.workstation.verify
+      tags:
+        - verify

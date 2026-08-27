@@ -1,0 +1,81 @@
+# 1Password setup guide ({{ workstation_1password_flavor }})
+#
+# Complete these steps on this machine, then press Enter in the playbook pause.
+# Official docs: https://developer.1password.com/docs/cli/get-started/
+
+{% if workstation_1password_flavor == 'wsl_windows' %}
+## WSL + Windows 1Password (Windows Hello)
+
+1. **Install 1Password for Windows**
+   - Download: https://1password.com/downloads/windows
+   - Sign in to the account that holds your GitHub PAT and SSH keys.
+
+2. **Enable Windows Hello**
+   - In 1Password: Settings → Security → turn on Windows Hello.
+   - Docs: https://support.1password.com/windows-hello/
+
+3. **Integrate with 1Password CLI**
+   - Settings → Developer → check **Integrate with 1Password CLI**.
+   - Docs: https://developer.1password.com/docs/cli/get-started/#step-2-turn-on-the-1password-desktop-app-integration
+
+4. **SSH agent (optional, for commit signing / git SSH)**
+   - Settings → Developer → **Use the SSH agent**.
+   - WSL SSH signing docs: https://developer.1password.com/docs/ssh/integrations/wsl
+
+5. **Windows CLI (`op.exe`)**
+   - After you press Enter, this role installs the CLI with winget if `op.exe` is missing:
+     `winget install -e --id AgileBits.1Password.CLI`
+   - Manual install: https://developer.1password.com/docs/cli/get-started/
+
+6. **Unlock the Windows app** (desktop, not WSL) so the first `op.exe` call can show Hello.
+
+**Do not** install Linux `1password-cli` inside WSL. It looks for a Linux desktop daemon
+(`/run/user/.../op-daemon.pid`) and breaks shell plugins. This collection uses `op.exe` only.
+
+{% elif workstation_1password_flavor == 'macos' %}
+## macOS 1Password (Touch ID)
+
+1. **Install 1Password for Mac**
+   - Download: https://1password.com/downloads/mac
+   - Or, after you press Enter, this role can install via Homebrew cask.
+
+2. **Enable Touch ID** (or Apple Watch unlock)
+   - Settings → Security → Touch ID.
+
+3. **Integrate with 1Password CLI**
+   - Settings → Developer → check **Integrate with 1Password CLI**.
+
+4. **SSH agent (optional)**
+   - Settings → Developer → **Use the SSH agent**.
+
+5. **CLI**
+   - After Enter, this role runs `brew install 1password-cli` (and the app cask if needed).
+
+6. **Unlock the app** so the first `op` call can prompt.
+
+{% else %}
+## Linux 1Password (system authentication / PolKit)
+
+1. **Install 1Password for Linux**
+   - Download: https://1password.com/downloads/linux
+   - Prefer the official `.deb` / package — not Flatpak/Snap if you need the SSH agent.
+
+2. **Unlock with system authentication**
+   - Settings → Security → Unlock using system authentication (PolKit).
+   - Docs: https://support.1password.com/system-authentication-linux/
+
+3. **Integrate with 1Password CLI**
+   - Settings → Developer → check **Integrate with 1Password CLI**.
+
+4. **SSH agent (optional)**
+   - Settings → Developer → **Use the SSH agent**.
+
+5. **CLI**
+   - After Enter, this role installs `1password-cli` via Homebrew when available,
+     otherwise prints the official Linux package instructions.
+
+6. **Unlock the app** so the first `op` call can prompt.
+
+{% endif %}
+
+Expected CLI command for this host: `{{ workstation_op_cli }}`

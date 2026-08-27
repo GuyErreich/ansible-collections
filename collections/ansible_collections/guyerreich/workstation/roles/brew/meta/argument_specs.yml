@@ -1,0 +1,18 @@
+---
+argument_specs:
+  main:
+    short_description: Install Homebrew using workstation_brew_prefix facts.
+    options:
+      workstation_brew_prefix:
+        type: str
+        required: true
+        description: Absolute Homebrew prefix from the platform role.
+      workstation_pkg_mgr:
+        type: str
+        required: true
+        description: Native package manager for prerequisites (apt or brew).
+      workstation_zsh_custom:
+        type: path
+        required: false
+        default: "{{ ansible_env.HOME }}/.oh-my-zsh/custom"
+        description: Oh My Zsh custom directory for the brew shellenv snippet.

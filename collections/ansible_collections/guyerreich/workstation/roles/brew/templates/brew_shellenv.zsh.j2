@@ -1,0 +1,5 @@
+# Managed by guyerreich.workstation brew role — brew shellenv
+# shellcheck shell=zsh
+if [[ -x "{{ workstation_brew_prefix }}/bin/brew" ]]; then
+  eval "$({{ workstation_brew_prefix }}/bin/brew shellenv)"
+fi

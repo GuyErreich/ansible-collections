@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: onepassword
+  author: Guy Erreich
+  description: Guided 1Password desktop + CLI setup (flavor from platform facts).
+  license: MIT
+  min_ansible_version: "2.16"
+dependencies: []

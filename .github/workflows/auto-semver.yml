@@ -1,0 +1,41 @@
+name: Auto Semver Bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev, staging, main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-version:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get GitHub App Token
+        uses: ./.github/actions/app-authentication
+        id: app-token
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Configure Git for App
+        run: |
+          git config user.name "${{ steps.app-token.outputs.user-name }}"
+          git config user.email "${{ steps.app-token.outputs.user-email }}"
+          git remote set-url origin https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ github.repository }}.git
+
+      - name: Run Auto Semver Action
+        # Pin to commit SHA until Action-Semver-Control cuts a release; then switch to @vX
+        uses: GuyErreich/Action-Semver-Control@1ee4f37eed5a14d95b4b3126be670444d659cb1e
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          debug: "true"

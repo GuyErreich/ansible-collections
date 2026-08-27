@@ -1,0 +1,52 @@
+---
+# Render op_gh snippet; remove legacy op plugin alias source line.
+- name: Ensure zsh is installed
+  ansible.builtin.command:
+    cmd: command -v zsh
+  register: workstation_zsh_which
+  changed_when: false
+  failed_when: false
+
+- name: Warn when zsh is missing
+  when: workstation_zsh_which.rc != 0
+  ansible.builtin.debug:
+    msg: >-
+      zsh is not installed. Install zsh, then re-run the shell role.
+
+- name: Check Oh My Zsh directory
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.oh-my-zsh"
+  register: workstation_omz_dir
+
+- name: Ensure Oh My Zsh custom directory exists
+  ansible.builtin.file:
+    path: "{{ workstation_zsh_custom }}"
+    state: directory
+    mode: "0755"
+
+- name: Install op_gh zsh snippet
+  ansible.builtin.template:
+    src: op_gh.zsh.j2
+    dest: "{{ workstation_zsh_custom }}/op_gh.zsh"
+    mode: "0644"
+
+- name: Check zshrc exists
+  ansible.builtin.stat:
+    path: "{{ workstation_zshrc }}"
+  register: workstation_zshrc_stat
+
+- name: Remove legacy op plugin alias source from zshrc
+  when: workstation_zshrc_stat.stat.exists | default(false)
+  ansible.builtin.lineinfile:
+    path: "{{ workstation_zshrc }}"
+    regexp: '^source\s+.*\.config/op/plugins\.sh\s*$'
+    state: absent
+    backup: true
+  failed_when: false
+
+- name: Note for non-OMZ zsh users
+  when: not (workstation_omz_dir.stat.exists | default(false))
+  ansible.builtin.debug:
+    msg: >-
+      Oh My Zsh not found at ~/.oh-my-zsh. Add to your zshrc:
+      source {{ workstation_zsh_custom }}/op_gh.zsh

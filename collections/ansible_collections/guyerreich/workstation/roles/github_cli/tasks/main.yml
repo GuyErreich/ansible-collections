@@ -1,0 +1,26 @@
+---
+# Install GitHub CLI with Homebrew — same task on every platform.
+- name: Ensure brew is on PATH for this play
+  ansible.builtin.set_fact:
+    workstation_brew_bin: "{{ workstation_brew_prefix }}/bin/brew"
+
+- name: Assert brew binary exists
+  ansible.builtin.stat:
+    path: "{{ workstation_brew_bin }}"
+  register: workstation_gh_brew_stat
+
+- name: Fail when brew is missing
+  ansible.builtin.assert:
+    that:
+      - workstation_gh_brew_stat.stat.exists
+    fail_msg: >-
+      Homebrew is required before installing gh.
+      Run the brew role first (or --tags brew).
+
+- name: Install gh via Homebrew
+  community.general.homebrew:
+    name: gh
+    state: present
+    path: "{{ workstation_brew_prefix }}/bin"
+  environment:
+    PATH: "{{ workstation_brew_prefix }}/bin:{{ ansible_env.PATH }}"

@@ -1,0 +1,10 @@
+---
+op_github_token_ref: ""
+workstation_git_signing: skip
+workstation_skip_signing_prompt: true
+workstation_git_user_name: ""
+workstation_git_user_email: ""
+workstation_git_user_name_ref: ""
+workstation_git_user_email_ref: ""
+workstation_git_signing_key_ref: ""
+workstation_git_gpg_key_id: ""

@@ -1,0 +1,47 @@
+---
+# Read-only checks — does not run op vault list or gh auth (biometrics).
+- name: Check brew on PATH
+  ansible.builtin.command:
+    cmd: "{{ workstation_brew_prefix }}/bin/brew --version"
+  register: workstation_verify_brew
+  changed_when: false
+  failed_when: false
+
+- name: Check gh binary
+  ansible.builtin.command:
+    cmd: command -v gh
+  register: workstation_verify_gh
+  changed_when: false
+  failed_when: false
+
+- name: Check op CLI binary
+  ansible.builtin.command:
+    cmd: "command -v {{ workstation_op_cli }}"
+  register: workstation_verify_op
+  changed_when: false
+  failed_when: false
+
+- name: Check op_gh snippet file
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.oh-my-zsh/custom/op_gh.zsh"
+  register: workstation_verify_op_gh
+
+- name: Read GitHub credential helper config
+  ansible.builtin.command:
+    cmd: git config --global --get-all credential.https://github.com.helper
+  register: workstation_verify_git_helper
+  changed_when: false
+  failed_when: false
+
+- name: Workstation setup verification summary
+  ansible.builtin.debug:
+    msg:
+      - "brew: {{ 'OK' if workstation_verify_brew.rc == 0 else 'MISSING' }}"
+      - "gh: {{ workstation_verify_gh.stdout | default('MISSING') | trim }}"
+      - "op: {{ workstation_verify_op.stdout | default('MISSING') | trim }}"
+      - "op_gh.zsh: {{ 'present' if workstation_verify_op_gh.stat.exists | default(false) else 'missing' }}"
+      - "git credential helper lines: {{ workstation_verify_git_helper.stdout_lines | default([]) | length }}"
+      - "--- Manual checks (trigger biometrics) ---"
+      - "{{ workstation_op_cli }} vault list"
+      - "gh auth status"
+      - "git ls-remote origin HEAD"

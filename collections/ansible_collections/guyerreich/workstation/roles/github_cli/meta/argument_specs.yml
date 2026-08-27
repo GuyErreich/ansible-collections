@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Install gh with Homebrew using workstation_brew_prefix.
+    options:
+      workstation_brew_prefix:
+        type: str
+        required: true
+        description: Absolute Homebrew prefix from the platform role.

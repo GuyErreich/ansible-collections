@@ -1,0 +1,162 @@
+---
+# Derive workstation_* facts. No system changes — tags: always.
+- name: Assert gathered facts are available
+  ansible.builtin.assert:
+    that:
+      - ansible_system is defined
+      - ansible_architecture is defined
+      - ansible_os_family is defined
+    fail_msg: >-
+      Ansible facts are missing. Run with gather_facts: true (bootstrap playbook default).
+
+- name: Detect WSL from kernel release
+  ansible.builtin.set_fact:
+    workstation_is_wsl: "{{ (ansible_kernel | default('') | lower) is search('microsoft') }}"
+
+- name: Normalize OS key
+  ansible.builtin.set_fact:
+    workstation_os: >-
+      {{
+        'darwin' if ansible_system == 'Darwin'
+        else (
+          'ubuntu' if (ansible_distribution | default('') | lower) == 'ubuntu'
+          else (
+            'debian' if ansible_os_family == 'Debian'
+            else (ansible_distribution | default(ansible_os_family) | lower)
+          )
+        )
+      }}
+
+- name: Normalize architecture
+  ansible.builtin.set_fact:
+    workstation_arch: >-
+      {{
+        'arm64' if ansible_architecture in ['arm64', 'aarch64']
+        else (
+          'amd64' if ansible_architecture in ['x86_64', 'amd64']
+          else ansible_architecture
+        )
+      }}
+
+- name: Fail on unmapped architecture for brew prefix
+  ansible.builtin.assert:
+    that:
+      - ansible_system in workstation_brew_prefix_map
+      - ansible_architecture in workstation_brew_prefix_map[ansible_system]
+        or workstation_arch in workstation_brew_prefix_map[ansible_system]
+    fail_msg: >-
+      Unmapped platform {{ ansible_system }}/{{ ansible_architecture }}.
+      Add a mapping under roles/platform/defaults/main.yml
+      (workstation_brew_prefix_map) or roles/platform/vars/.
+
+- name: Set brew prefix from map
+  ansible.builtin.set_fact:
+    workstation_brew_prefix: >-
+      {{
+        workstation_brew_prefix_map[ansible_system][ansible_architecture]
+        | default(workstation_brew_prefix_map[ansible_system][workstation_arch])
+      }}
+
+- name: Set package manager fact
+  ansible.builtin.set_fact:
+    workstation_pkg_mgr: "{{ 'brew' if ansible_system == 'Darwin' else 'apt' }}"
+
+- name: Set 1Password flavor
+  ansible.builtin.set_fact:
+    workstation_1password_flavor: >-
+      {{
+        'wsl_windows' if workstation_is_wsl
+        else (
+          'macos' if ansible_system == 'Darwin'
+          else 'linux_native'
+        )
+      }}
+
+- name: Set SSH sign binary name
+  ansible.builtin.set_fact:
+    workstation_ssh_sign: "{{ 'op-ssh-sign-wsl.exe' if workstation_is_wsl else 'op-ssh-sign' }}"
+
+- name: Set biometrics support flag
+  ansible.builtin.set_fact:
+    workstation_supports_biometrics: true
+
+- name: Discover op CLI on PATH
+  ansible.builtin.command:
+    cmd: "command -v {{ 'op.exe' if workstation_is_wsl else 'op' }}"
+  register: workstation_op_which
+  changed_when: false
+  failed_when: false
+
+- name: Use op from PATH when found
+  ansible.builtin.set_fact:
+    workstation_op_cli: "{{ workstation_op_which.stdout | trim }}"
+  when: workstation_op_which.rc == 0 and (workstation_op_which.stdout | trim | length) > 0
+
+- name: Probe known Windows op.exe locations on WSL
+  when:
+    - workstation_is_wsl
+    - workstation_op_cli is not defined
+  block:
+    - name: Stat candidate op.exe paths
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ workstation_wsl_op_exe_candidates }}"
+      register: workstation_op_stat
+
+    - name: Pick first existing op.exe candidate
+      ansible.builtin.set_fact:
+        workstation_op_cli: >-
+          {{
+            (
+              workstation_op_stat.results
+              | selectattr('stat.exists', 'defined')
+              | selectattr('stat.exists')
+              | map(attribute='stat.path')
+              | list
+              | first
+            ) | default(none)
+      when:
+        - workstation_is_wsl
+        - workstation_op_cli is not defined
+        - workstation_op_stat.results | selectattr('stat.exists') | list | length > 0
+
+- name: Fall back to bare command name when binary not yet installed
+  ansible.builtin.set_fact:
+    workstation_op_cli: "{{ 'op.exe' if workstation_is_wsl else 'op' }}"
+  when: workstation_op_cli is not defined
+
+- name: Check WSL interop / Windows PATH availability
+  when: workstation_is_wsl
+  block:
+    - name: Probe winget.exe for interop health
+      ansible.builtin.command:
+        cmd: command -v winget.exe
+      register: workstation_winget_which
+      changed_when: false
+      failed_when: false
+
+    - name: Remember whether Windows interop appears available
+      ansible.builtin.set_fact:
+        workstation_wsl_interop_ok: "{{ workstation_winget_which.rc == 0 or (workstation_op_cli is match('/mnt/c/')) }}"
+
+- name: Assert required workstation facts are set
+  ansible.builtin.assert:
+    that:
+      - workstation_os is defined
+      - workstation_arch is defined
+      - workstation_is_wsl is defined
+      - workstation_op_cli is defined
+      - workstation_brew_prefix is defined
+      - workstation_pkg_mgr is defined
+      - workstation_1password_flavor is defined
+      - workstation_ssh_sign is defined
+      - workstation_supports_biometrics is defined
+    fail_msg: platform role failed to publish the full workstation_* fact contract.
+
+- name: Show platform summary
+  ansible.builtin.debug:
+    msg:
+      - "os={{ workstation_os }} arch={{ workstation_arch }} wsl={{ workstation_is_wsl }}"
+      - "brew_prefix={{ workstation_brew_prefix }} pkg_mgr={{ workstation_pkg_mgr }}"
+      - "1password_flavor={{ workstation_1password_flavor }} op_cli={{ workstation_op_cli }}"
+      - "ssh_sign={{ workstation_ssh_sign }}"

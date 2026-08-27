@@ -1,0 +1,256 @@
+---
+# Git credential helper + optional identity/signing (op:// references in gitconfig only).
+- name: Prompt for GitHub PAT op reference when unset
+  when: op_github_token_ref | length == 0
+  ansible.builtin.pause:
+    prompt: >-
+      Enter op:// reference for your GitHub PAT (e.g. op://Personal/GitHub PAT/token)
+  register: workstation_pat_prompt
+
+- name: Capture GitHub PAT reference from prompt
+  when:
+    - op_github_token_ref | length == 0
+    - workstation_pat_prompt is defined
+  ansible.builtin.set_fact:
+    op_github_token_ref: "{{ workstation_pat_prompt.user_input | trim }}"
+
+- name: Assert GitHub PAT reference is set
+  ansible.builtin.assert:
+    that:
+      - op_github_token_ref is match('^op://')
+    fail_msg: >-
+      op_github_token_ref must be an op:// secret reference (never a raw token).
+      Pass -e op_github_token_ref=op://... or use examples/extra-vars.yml.
+
+- name: Build GitHub credential helper command
+  ansible.builtin.set_fact:
+    workstation_git_credential_helper: >-
+      !f() { test "$1" = get || exit 0;
+      echo username=x-access-token;
+      echo password="$({{ workstation_op_cli }} read \"{{ op_github_token_ref }}\")";
+      }; f
+
+- name: Clear and set GitHub credential helper
+  ansible.builtin.git_config:
+    name: "{{ item.key }}"
+    scope: global
+    value: "{{ item.value }}"
+  loop:
+    - key: credential.https://github.com.helper
+      value: ""
+    - key: credential.https://github.com.helper
+      value: "{{ workstation_git_credential_helper }}"
+    - key: credential.https://gist.github.com.helper
+      value: ""
+    - key: credential.https://gist.github.com.helper
+      value: "{{ workstation_git_credential_helper }}"
+
+- name: Ask whether to configure git identity
+  when:
+    - workstation_git_user_name | length == 0
+    - workstation_git_user_email | length == 0
+    - workstation_git_user_name_ref | length == 0
+    - workstation_git_user_email_ref | length == 0
+  ansible.builtin.pause:
+    prompt: "Configure user.name and user.email now? [y/N]"
+  register: workstation_identity_prompt
+
+- name: Decide whether to configure identity
+  when: workstation_identity_prompt is defined
+  ansible.builtin.set_fact:
+    workstation_git_configure_identity: >-
+      {{ (workstation_identity_prompt.user_input | default('') | lower) in ['y', 'yes'] }}
+
+- name: Prompt for git user.name
+  when:
+    - workstation_git_configure_identity | default(false)
+    - workstation_git_user_name | length == 0
+    - workstation_git_user_name_ref | length == 0
+  ansible.builtin.pause:
+    prompt: "user.name (plain text or op:// reference)"
+  register: workstation_name_prompt
+
+- name: Capture user.name input
+  when: workstation_name_prompt is defined
+  ansible.builtin.set_fact:
+    workstation_git_user_name_input: "{{ workstation_name_prompt.user_input | trim }}"
+
+- name: Store user.name as op reference
+  when:
+    - workstation_git_user_name_input is defined
+    - workstation_git_user_name_input is match('^op://')
+  ansible.builtin.set_fact:
+    workstation_git_user_name_ref: "{{ workstation_git_user_name_input }}"
+
+- name: Store user.name as plain value
+  when:
+    - workstation_git_user_name_input is defined
+    - not (workstation_git_user_name_input is match('^op://'))
+  ansible.builtin.set_fact:
+    workstation_git_user_name: "{{ workstation_git_user_name_input }}"
+
+- name: Prompt for git user.email
+  when:
+    - workstation_git_configure_identity | default(false)
+    - workstation_git_user_email | length == 0
+    - workstation_git_user_email_ref | length == 0
+  ansible.builtin.pause:
+    prompt: "user.email (plain text or op:// reference)"
+  register: workstation_email_prompt
+
+- name: Capture user.email input
+  when: workstation_email_prompt is defined
+  ansible.builtin.set_fact:
+    workstation_git_user_email_input: "{{ workstation_email_prompt.user_input | trim }}"
+
+- name: Store user.email as op reference
+  when:
+    - workstation_git_user_email_input is defined
+    - workstation_git_user_email_input is match('^op://')
+  ansible.builtin.set_fact:
+    workstation_git_user_email_ref: "{{ workstation_git_user_email_input }}"
+
+- name: Store user.email as plain value
+  when:
+    - workstation_git_user_email_input is defined
+    - not (workstation_git_user_email_input is match('^op://'))
+  ansible.builtin.set_fact:
+    workstation_git_user_email: "{{ workstation_git_user_email_input }}"
+
+- name: Resolve user.name from 1Password
+  when: workstation_git_user_name_ref | length > 0
+  ansible.builtin.command:
+    cmd: "{{ workstation_op_cli }} read {{ workstation_git_user_name_ref | quote }}"
+  register: workstation_git_name_resolved
+  changed_when: false
+  no_log: true
+
+- name: Set user.name from resolved value
+  when:
+    - workstation_git_name_resolved is defined
+    - workstation_git_name_resolved.rc == 0
+  ansible.builtin.set_fact:
+    workstation_git_user_name: "{{ workstation_git_name_resolved.stdout | trim }}"
+  no_log: true
+
+- name: Resolve user.email from 1Password
+  when: workstation_git_user_email_ref | length > 0
+  ansible.builtin.command:
+    cmd: "{{ workstation_op_cli }} read {{ workstation_git_user_email_ref | quote }}"
+  register: workstation_git_email_resolved
+  changed_when: false
+  no_log: true
+
+- name: Set user.email from resolved value
+  when:
+    - workstation_git_email_resolved is defined
+    - workstation_git_email_resolved.rc == 0
+  ansible.builtin.set_fact:
+    workstation_git_user_email: "{{ workstation_git_email_resolved.stdout | trim }}"
+  no_log: true
+
+- name: Write user.name
+  when: workstation_git_user_name | length > 0
+  ansible.builtin.git_config:
+    name: user.name
+    scope: global
+    value: "{{ workstation_git_user_name }}"
+
+- name: Write user.email
+  when: workstation_git_user_email | length > 0
+  ansible.builtin.git_config:
+    name: user.email
+    scope: global
+    value: "{{ workstation_git_user_email }}"
+
+- name: Ask about commit signing when default skip
+  when:
+    - workstation_git_signing == 'skip'
+    - not (workstation_skip_signing_prompt | bool)
+  ansible.builtin.pause:
+    prompt: "Commit signing? Enter skip, ssh (1Password SSH), or gpg [skip]"
+  register: workstation_signing_prompt
+
+- name: Capture signing choice
+  when:
+    - workstation_signing_prompt is defined
+    - (workstation_signing_prompt.user_input | default('') | trim | length) > 0
+  ansible.builtin.set_fact:
+    workstation_git_signing: "{{ workstation_signing_prompt.user_input | trim | lower }}"
+
+- name: Normalize signing choice
+  ansible.builtin.set_fact:
+    workstation_git_signing: >-
+      {{
+        'skip' if workstation_git_signing not in ['skip', 'ssh', 'gpg']
+        else workstation_git_signing
+      }}
+
+- name: Configure SSH commit signing via 1Password
+  when: workstation_git_signing == 'ssh'
+  block:
+    - name: Prompt for SSH public key op reference when unset
+      when: workstation_git_signing_key_ref | length == 0
+      ansible.builtin.pause:
+        prompt: >-
+          op:// reference for SSH public key (signingkey)
+      register: workstation_ssh_key_prompt
+
+    - name: Capture SSH key reference
+      when:
+        - workstation_ssh_key_prompt is defined
+        - workstation_git_signing_key_ref | length == 0
+      ansible.builtin.set_fact:
+        workstation_git_signing_key_ref: "{{ workstation_ssh_key_prompt.user_input | trim }}"
+
+    - name: Resolve SSH public signing key
+      ansible.builtin.command:
+        cmd: "{{ workstation_op_cli }} read {{ workstation_git_signing_key_ref | quote }}"
+      register: workstation_ssh_pubkey
+      changed_when: false
+
+    - name: Set SSH signing git config
+      ansible.builtin.git_config:
+        name: "{{ item.key }}"
+        scope: global
+        value: "{{ item.value }}"
+      loop:
+        - key: gpg.format
+          value: ssh
+        - key: commit.gpgsign
+          value: "true"
+        - key: user.signingkey
+          value: "{{ workstation_ssh_pubkey.stdout | trim }}"
+        - key: gpg.ssh.program
+          value: "{{ workstation_ssh_sign }}"
+
+    - name: Remind about 1Password SSH agent
+      ansible.builtin.debug:
+        msg: >-
+          Enable the SSH agent in 1Password (Settings → Developer).
+          WSL: https://developer.1password.com/docs/ssh/integrations/wsl
+
+- name: Configure GPG commit signing
+  when: workstation_git_signing == 'gpg'
+  block:
+    - name: Prompt for GPG key id when unset
+      when: workstation_git_gpg_key_id | length == 0
+      ansible.builtin.pause:
+        prompt: "GPG key ID or fingerprint for user.signingkey"
+      register: workstation_gpg_prompt
+
+    - name: Capture GPG key id
+      when: workstation_gpg_prompt is defined
+      ansible.builtin.set_fact:
+        workstation_git_gpg_key_id: "{{ workstation_gpg_prompt.user_input | trim }}"
+
+    - name: Set GPG signing git config
+      ansible.builtin.git_config:
+        name: "{{ item.key }}"
+        scope: global
+        value: "{{ item.value }}"
+      loop:
+        - key: commit.gpgsign
+          value: "true"
+        - key: user.signingkey
+          value: "{{ workstation_git_gpg_key_id }}"

@@ -1,0 +1,71 @@
+---
+# Install Homebrew idempotently; wire shellenv via $ZSH_CUSTOM.
+- name: Check for existing brew binary
+  ansible.builtin.stat:
+    path: "{{ workstation_brew_prefix }}/bin/brew"
+  register: workstation_brew_bin
+
+- name: Install apt prerequisites for Linuxbrew
+  when:
+    - not workstation_brew_bin.stat.exists
+    - workstation_pkg_mgr == 'apt'
+  ansible.builtin.apt:
+    name: "{{ workstation_brew_apt_packages }}"
+    state: present
+    update_cache: true
+  become: true
+
+- name: Assert Xcode Command Line Tools on macOS
+  when:
+    - not workstation_brew_bin.stat.exists
+    - ansible_system == 'Darwin'
+  block:
+    - name: Probe xcode-select
+      ansible.builtin.command:
+        cmd: xcode-select -p
+      register: workstation_xcode_select
+      changed_when: false
+      failed_when: false
+
+    - name: Fail when CLT missing
+      ansible.builtin.assert:
+        that:
+          - workstation_xcode_select.rc == 0
+        fail_msg: >-
+          Install Xcode Command Line Tools first (xcode-select --install),
+          then re-run the brew role.
+
+- name: Install Homebrew non-interactively
+  when: not workstation_brew_bin.stat.exists
+  ansible.builtin.shell: |
+    set -euo pipefail
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL {{ workstation_brew_install_url }})"
+  args:
+    creates: "{{ workstation_brew_prefix }}/bin/brew"
+  environment:
+    NONINTERACTIVE: "1"
+
+- name: Re-check brew binary after install
+  ansible.builtin.stat:
+    path: "{{ workstation_brew_prefix }}/bin/brew"
+  register: workstation_brew_bin_after
+
+- name: Assert brew is present
+  ansible.builtin.assert:
+    that:
+      - workstation_brew_bin_after.stat.exists
+    fail_msg: >-
+      Homebrew install did not produce {{ workstation_brew_prefix }}/bin/brew.
+      Check the install script output and platform mapping.
+
+- name: Ensure Oh My Zsh custom directory exists
+  ansible.builtin.file:
+    path: "{{ workstation_zsh_custom }}"
+    state: directory
+    mode: "0755"
+
+- name: Install brew shellenv zsh snippet
+  ansible.builtin.template:
+    src: brew_shellenv.zsh.j2
+    dest: "{{ workstation_zsh_custom }}/brew_shellenv.zsh"
+    mode: "0644"

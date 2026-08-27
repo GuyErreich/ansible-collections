@@ -1,0 +1,29 @@
+---
+argument_specs:
+  main:
+    short_description: Guide and verify 1Password CLI for the detected flavor.
+    options:
+      workstation_1password_flavor:
+        type: str
+        required: true
+        choices:
+          - wsl_windows
+          - macos
+          - linux_native
+        description: Flavor selected by the platform role.
+      workstation_op_cli:
+        type: str
+        required: true
+        description: op / op.exe command or absolute path.
+      workstation_is_wsl:
+        type: bool
+        required: true
+      onepassword_skip_guide:
+        type: bool
+        required: false
+        default: false
+      onepassword_remove_linux_op:
+        type: bool
+        required: false
+        default: false
+        description: On WSL, remove /usr/bin/op when it shadows op.exe.

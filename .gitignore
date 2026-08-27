@@ -1,0 +1,27 @@
+# Local secret / vault material — never commit
+*.secret.yml
+extra-vars.yml
+.vault_pass
+.vault_pass.txt
+
+# Ansible / Python
+*.retry
+.ansible/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+*~
+*.swp
+.idea/
+.vscode/
+
+# Build artifacts
+*.tar.gz
+dist/
+build/
+
+.cache/

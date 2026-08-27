@@ -1,0 +1,35 @@
+---
+namespace: guyerreich
+name: outputs
+version: "1.0.0"
+readme: README.md
+authors:
+  - Guy Erreich <gerreich.dev@gmail.com>
+description: >-
+  Ansible stdout callback that prints message-only results as clean
+  multiline boxed output (subclass of the default callback).
+license:
+  - GPL-3.0-or-later
+tags:
+  - callback
+  - plugins
+  - output
+  - formatting
+repository: https://github.com/GuyErreich/ansible-collections
+documentation: https://github.com/GuyErreich/ansible-collections/tree/main/collections/ansible_collections/guyerreich/outputs#readme
+homepage: https://github.com/GuyErreich/ansible-collections
+issues: https://github.com/GuyErreich/ansible-collections/issues
+build_ignore:
+  - .git
+  - .github
+  - .gitignore
+  - .pytest_cache
+  - __pycache__
+  - .DS_Store
+  - "*.log"
+  - "*.tar.gz"
+  - .venv
+  - dist
+  - tests
+  - Makefile
+  - requirements.txt

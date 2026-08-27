@@ -1,0 +1,6 @@
+---
+# Role input contract. This role takes no user inputs; it publishes facts.
+argument_specs:
+  main:
+    short_description: Derive workstation_* platform facts from Ansible facts.
+    options: {}

@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: verify
+  author: Guy Erreich
+  description: Read-only verification summary (no biometric op calls).
+  license: MIT
+  min_ansible_version: "2.16"
+dependencies: []

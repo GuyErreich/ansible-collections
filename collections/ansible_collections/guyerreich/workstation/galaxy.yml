@@ -1,0 +1,42 @@
+---
+namespace: guyerreich
+name: workstation
+version: "1.0.0"
+readme: README.md
+authors:
+  - Guy Erreich <gerreich.dev@gmail.com>
+description: >-
+  Bootstrap a workstation (macOS, Ubuntu, WSL) with Homebrew, GitHub CLI,
+  guided 1Password setup, Oh My Zsh op/gh helpers, and interactive gitconfig.
+license:
+  - MIT
+tags:
+  - workstation
+  - wsl
+  - macos
+  - ubuntu
+  - homebrew
+  - github
+  - onepassword
+dependencies:
+  community.general: ">=8.0.0"
+repository: https://github.com/GuyErreich/ansible-collections
+documentation: https://github.com/GuyErreich/ansible-collections/tree/main/collections/ansible_collections/guyerreich/workstation#readme
+homepage: https://github.com/GuyErreich/ansible-collections
+issues: https://github.com/GuyErreich/ansible-collections/issues
+build_ignore:
+  - .git
+  - .github
+  - .ansible-lint
+  - .yamllint
+  - .gitleaks.toml
+  - .gitleaksignore
+  - .pre-commit-config.yaml
+  - .gitignore
+  - "*.secret.yml"
+  - extra-vars.yml
+  - .vault_pass
+  - tests
+  - "*.tar.gz"
+  - dist
+  - requirements.yml

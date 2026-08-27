@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  role_name: brew
+  author: Guy Erreich
+  description: Install Homebrew and wire brew shellenv for zsh.
+  license: MIT
+  min_ansible_version: "2.16"
+dependencies: []

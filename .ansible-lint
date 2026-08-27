@@ -1,0 +1,10 @@
+---
+profile: production
+exclude_paths:
+  - .cache/
+  - .git/
+  - collections/ansible_collections/guyerreich/outputs/tests/
+  - collections/ansible_collections/guyerreich/outputs/.venv/
+skip_list:
+  - package-latest
+  - galaxy[version-incorrect]

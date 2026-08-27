@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, staging, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  architecture-guard:
+    name: No per-OS roles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if macos/ubuntu/wsl roles exist
+        run: |
+          set -euo pipefail
+          roles_root="collections/ansible_collections/guyerreich/workstation/roles"
+          for forbidden in macos ubuntu wsl darwin windows; do
+            if [[ -d "${roles_root}/${forbidden}" ]]; then
+              echo "Forbidden role directory: ${roles_root}/${forbidden}"
+              echo "Add platform mappings in roles/platform instead."
+              exit 1
+            fi
+          done
+          echo "OK — no per-OS role directories."
+
+  lint-workstation:
+    name: Lint workstation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lint tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core ansible-lint yamllint
+
+      - name: Install collection dependency
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Yamllint
+        run: yamllint -c .yamllint .
+
+      - name: Ansible-lint
+        run: ansible-lint --offline --profile production
+
+      - name: Playbook syntax check
+        run: ansible-playbook --syntax-check playbooks/bootstrap.yml
+
+  idempotency:
+    name: Idempotency (platform check mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible-core
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: First run (platform facts only, check mode)
+        run: |
+          ansible-playbook playbooks/bootstrap.yml \
+            --tags platform \
+            --check \
+            --diff
+
+      - name: Second run must report no changes (platform, check mode)
+        run: |
+          out="$(ansible-playbook playbooks/bootstrap.yml --tags platform --check 2>&1)"
+          echo "$out"
+          if echo "$out" | grep -E 'changed=[1-9]'; then
+            echo "Expected changed=0 on second platform run"
+            exit 1
+          fi
+
+  outputs-tests:
+    name: outputs ansible-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core ansible-lint
+          pip install -r collections/ansible_collections/guyerreich/outputs/requirements.txt
+
+      - name: Build and install collection
+        working-directory: collections/ansible_collections/guyerreich/outputs
+        run: |
+          ansible-galaxy collection build --output-path /tmp/out-dist
+          ansible-galaxy collection install /tmp/out-dist/*.tar.gz -p "$HOME/.ansible/collections"
+
+      - name: Unit tests
+        run: |
+          COLLECTION="$HOME/.ansible/collections/ansible_collections/guyerreich/outputs"
+          cd "$COLLECTION"
+          ansible-test units --python 3.12 --requirements -v || ansible-test units --python 3.12 -v
+
+      - name: Sanity (local python)
+        run: |
+          COLLECTION="$HOME/.ansible/collections/ansible_collections/guyerreich/outputs"
+          cd "$COLLECTION"
+          ansible-test sanity --python 3.12 --skip-test pylint --skip-test pep8 -v || \
+          ansible-test sanity --python 3.12 -v

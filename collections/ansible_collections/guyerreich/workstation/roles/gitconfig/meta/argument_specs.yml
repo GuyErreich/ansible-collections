@@ -1,0 +1,45 @@
+---
+argument_specs:
+  main:
+    short_description: Configure global git with 1Password-backed GitHub credentials.
+    options:
+      workstation_op_cli:
+        type: str
+        required: true
+      workstation_ssh_sign:
+        type: str
+        required: true
+      op_github_token_ref:
+        type: str
+        required: false
+        default: ""
+      workstation_git_user_name:
+        type: str
+        required: false
+      workstation_git_user_email:
+        type: str
+        required: false
+      workstation_git_user_name_ref:
+        type: str
+        required: false
+      workstation_git_user_email_ref:
+        type: str
+        required: false
+      workstation_git_signing:
+        type: str
+        required: false
+        default: skip
+        choices:
+          - skip
+          - ssh
+          - gpg
+      workstation_git_signing_key_ref:
+        type: str
+        required: false
+      workstation_git_gpg_key_id:
+        type: str
+        required: false
+      workstation_skip_signing_prompt:
+        type: bool
+        required: false
+        default: false

@@ -1,0 +1,19 @@
+---
+# Default brew prefixes by OS family / arch. Override via include_vars if needed.
+workstation_brew_prefix_map:
+  Darwin:
+    arm64: /opt/homebrew
+    x86_64: /usr/local
+    aarch64: /opt/homebrew
+    amd64: /usr/local
+  Linux:
+    arm64: /home/linuxbrew/.linuxbrew
+    x86_64: /home/linuxbrew/.linuxbrew
+    aarch64: /home/linuxbrew/.linuxbrew
+    amd64: /home/linuxbrew/.linuxbrew
+
+# Known Windows paths for op.exe when WSL PATH interop is incomplete.
+workstation_wsl_op_exe_candidates:
+  - /mnt/c/Users/{{ ansible_user_id }}/AppData/Local/Microsoft/WinGet/Links/op.exe
+  - /mnt/c/Program Files/1Password CLI/op.exe
+  - /mnt/c/Program Files (x86)/1Password CLI/op.exe

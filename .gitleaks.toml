@@ -1,0 +1,52 @@
+title = "ansible-collections gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Placeholder op secret references and example PAT tokens"
+regexTarget = "line"
+regexes = [
+  '''op://[^/]+/[^/]+/[^"'\s]+''',
+  '''YOUR_GITHUB_PAT''',
+  '''op://Personal/GitHub PAT/token''',
+]
+
+[[allowlists]]
+description = "Example extra-vars and documentation"
+paths = [
+  '''examples/extra-vars\.yml$''',
+  '''README\.md$''',
+  '''scripts/setup-secrets\.md$''',
+  '''collections/ansible_collections/guyerreich/workstation/roles/onepassword/templates/SETUP\.md\.j2$''',
+]
+
+[[rules]]
+id = "github-pat-classic"
+description = "GitHub personal access token (classic prefix)"
+regex = '''ghp_[A-Za-z0-9]{20,}'''
+tags = ["github", "critical"]
+
+[[rules]]
+id = "github-pat-fine-grained"
+description = "GitHub fine-grained personal access token"
+regex = '''github_pat_[A-Za-z0-9_]{20,}'''
+tags = ["github", "critical"]
+
+[[rules]]
+id = "github-oauth-token-in-hosts-yml"
+description = "oauth_token stored in gh hosts.yml"
+regex = '''(?i)oauth_token:\s*gh[o|p|s|u|r|_]?'''
+tags = ["github", "gh-cli"]
+
+[[rules]]
+id = "onepassword-service-account"
+description = "1Password service account token"
+regex = '''ops_[A-Za-z0-9]{20,}'''
+tags = ["1password", "critical"]
+
+[[rules]]
+id = "ansible-galaxy-api-key"
+description = "Ansible Galaxy API key / token"
+regex = '''(?i)(galaxy[_-]?api[_-]?(key|token)|ANSIBLE_GALAXY.*TOKEN)\s*[:=]\s*['\"]?[A-Za-z0-9._-]{20,}'''
+tags = ["galaxy", "critical"]

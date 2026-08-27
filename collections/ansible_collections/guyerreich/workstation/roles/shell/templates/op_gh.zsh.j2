@@ -1,0 +1,33 @@
+# Managed by guyerreich.workstation shell role — 1Password + GitHub CLI helpers
+# Resolves secrets at gh invocation time via op:// references (never at shell startup).
+# shellcheck shell=zsh
+
+export OP_PLUGIN_ALIASES_SOURCED=1
+
+{% if op_github_token_ref | length > 0 %}
+export OP_GITHUB_TOKEN_REF="{{ op_github_token_ref }}"
+{% endif %}
+
+{% if workstation_is_wsl %}
+if command -v op.exe >/dev/null 2>&1; then
+  alias op='op.exe'
+fi
+{% endif %}
+
+if command -v {{ workstation_op_cli }} >/dev/null 2>&1; then
+  eval "$({{ workstation_op_cli }} completion zsh 2>/dev/null)" || true
+fi
+
+gh() {
+  if [[ -z "${OP_GITHUB_TOKEN_REF:-}" ]]; then
+    echo "OP_GITHUB_TOKEN_REF is unset. Run the gitconfig role or export an op:// reference." >&2
+    return 1
+  fi
+  if ! command -v {{ workstation_op_cli }} >/dev/null 2>&1; then
+    echo "{{ workstation_op_cli }} not found. Complete the onepassword role first." >&2
+    return 1
+  fi
+  local token
+  token="$({{ workstation_op_cli }} read "$OP_GITHUB_TOKEN_REF")" || return
+  GH_TOKEN="$token" GITHUB_TOKEN="$token" command gh "$@"
+}

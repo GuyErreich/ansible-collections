@@ -1,0 +1,31 @@
+---
+extends: default
+
+exclude_paths:
+  - .cache
+  - .git
+
+mock_modules:
+  - community.general.homebrew
+  - community.general.homebrew_cask
+
+skip_list:
+  - schema[rolespec]
+
+profile: production
+
+write_list:
+  - name[casing]
+  - yaml[line-length]
+
+warn_list:
+  - experimental
+
+kinds:
+  - playbook
+  - tasks
+  - vars
+  - meta
+  - role
+
+use_default_rules: true

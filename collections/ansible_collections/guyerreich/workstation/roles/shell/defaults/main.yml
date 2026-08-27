@@ -1,0 +1,4 @@
+---
+workstation_zsh_custom: "{{ ansible_env.HOME }}/.oh-my-zsh/custom"
+workstation_zshrc: "{{ ansible_env.HOME }}/.zshrc"
+op_github_token_ref: ""

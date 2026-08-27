@@ -1,0 +1,9 @@
+---
+workstation_zsh_custom: "{{ ansible_env.HOME }}/.oh-my-zsh/custom"
+workstation_brew_install_url: https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh
+workstation_brew_apt_packages:
+  - build-essential
+  - curl
+  - file
+  - git
+  - procps

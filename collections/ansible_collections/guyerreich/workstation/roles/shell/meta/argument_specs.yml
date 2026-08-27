@@ -1,0 +1,20 @@
+---
+argument_specs:
+  main:
+    short_description: Render op_gh snippet into Oh My Zsh custom directory.
+    options:
+      workstation_op_cli:
+        type: str
+        required: true
+      workstation_is_wsl:
+        type: bool
+        required: true
+      op_github_token_ref:
+        type: str
+        required: false
+        default: ""
+        description: op:// reference for GitHub PAT (also set by gitconfig role).
+      workstation_zsh_custom:
+        type: path
+        required: false
+        default: "{{ ansible_env.HOME }}/.oh-my-zsh/custom"

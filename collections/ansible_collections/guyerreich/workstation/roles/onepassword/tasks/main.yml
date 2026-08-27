@@ -1,0 +1,153 @@
+---
+# Guided 1Password setup, flavor-specific install, cheap verify.
+- name: Render setup guide
+  ansible.builtin.template:
+    src: SETUP.md.j2
+    dest: /tmp/workstation-1password-SETUP.md
+    mode: "0644"
+  changed_when: false
+
+- name: Show 1Password setup instructions
+  when: not (onepassword_skip_guide | bool)
+  ansible.builtin.debug:
+    msg: "{{ lookup('ansible.builtin.file', '/tmp/workstation-1password-SETUP.md').splitlines() }}"
+
+- name: Pause until desktop app integration is done
+  when: not (onepassword_skip_guide | bool)
+  ansible.builtin.pause:
+    prompt: >-
+      Complete the 1Password steps printed above, unlock the desktop app,
+      then press Enter to continue (or re-run with -e onepassword_skip_guide=true).
+
+- name: WSL — install Windows CLI via winget when missing
+  when: workstation_1password_flavor == 'wsl_windows'
+  block:
+    - name: Probe op.exe
+      ansible.builtin.command:
+        cmd: "command -v {{ workstation_op_cli }}"
+      register: workstation_op_probe
+      changed_when: false
+      failed_when: false
+
+    - name: Probe winget.exe
+      ansible.builtin.command:
+        cmd: command -v winget.exe
+      register: workstation_winget_probe
+      changed_when: false
+      failed_when: false
+      when: workstation_op_probe.rc != 0
+
+    - name: Install 1Password CLI with winget
+      ansible.builtin.command:
+        cmd: >-
+          winget.exe install -e --id AgileBits.1Password.CLI
+          --accept-package-agreements --accept-source-agreements
+      when:
+        - workstation_op_probe.rc != 0
+        - workstation_winget_probe.rc == 0
+      register: workstation_winget_install
+      changed_when: workstation_winget_install.rc == 0
+
+    - name: Fail when op.exe still missing and winget unavailable
+      ansible.builtin.fail:
+        msg: >-
+          op.exe is not available and winget.exe was not found.
+          Finish the Windows CLI install steps, ensure WSL interop / Windows PATH
+          is enabled (appendWindowsPath), then re-run.
+      when:
+        - workstation_op_probe.rc != 0
+        - workstation_winget_probe is defined
+        - workstation_winget_probe.rc != 0
+
+    - name: Detect Linux /usr/bin/op that shadows Windows CLI
+      ansible.builtin.stat:
+        path: /usr/bin/op
+      register: workstation_linux_op
+
+    - name: Warn about Linux op on WSL
+      when: workstation_linux_op.stat.exists | default(false)
+      ansible.builtin.debug:
+        msg: >-
+          /usr/bin/op is present. It cannot talk to the Windows 1Password app and
+          causes 'op-daemon.pid' / shell-plugin errors. Prefer op.exe only.
+          Re-run with -e onepassword_remove_linux_op=true to remove it (become).
+
+    - name: Remove Linux op on WSL when requested
+      when:
+        - workstation_linux_op.stat.exists | default(false)
+        - onepassword_remove_linux_op | bool
+      ansible.builtin.package:
+        name: 1password-cli
+        state: absent
+      become: true
+      failed_when: false
+
+    - name: Remove leftover /usr/bin/op if package removal left it
+      when:
+        - onepassword_remove_linux_op | bool
+      ansible.builtin.file:
+        path: /usr/bin/op
+        state: absent
+      become: true
+      failed_when: false
+
+- name: macOS — install 1Password app and CLI via Homebrew
+  when: workstation_1password_flavor == 'macos'
+  block:
+    - name: Install 1Password app cask
+      community.general.homebrew_cask:
+        name: 1password
+        state: present
+        path: "{{ workstation_brew_prefix }}/bin"
+      environment:
+        PATH: "{{ workstation_brew_prefix }}/bin:{{ ansible_env.PATH }}"
+      failed_when: false
+
+    - name: Install 1password-cli formula
+      community.general.homebrew:
+        name: 1password-cli
+        state: present
+        path: "{{ workstation_brew_prefix }}/bin"
+      environment:
+        PATH: "{{ workstation_brew_prefix }}/bin:{{ ansible_env.PATH }}"
+
+- name: Linux native — install 1password-cli via Homebrew when available
+  when: workstation_1password_flavor == 'linux_native'
+  block:
+    - name: Try Homebrew formula 1password-cli
+      community.general.homebrew:
+        name: 1password-cli
+        state: present
+        path: "{{ workstation_brew_prefix }}/bin"
+      environment:
+        PATH: "{{ workstation_brew_prefix }}/bin:{{ ansible_env.PATH }}"
+      register: workstation_linux_op_brew
+      failed_when: false
+
+    - name: Hint when brew formula missing
+      when: workstation_linux_op_brew is failed
+      ansible.builtin.debug:
+        msg: >-
+          Install 1Password CLI from https://developer.1password.com/docs/cli/get-started/
+          (Linux packages) if brew install 1password-cli is unavailable.
+
+- name: Verify op CLI version (no vault / biometric call)
+  ansible.builtin.command:
+    cmd: "{{ workstation_op_cli }} --version"
+  register: workstation_op_version
+  changed_when: false
+  failed_when: false
+
+- name: Assert op CLI works
+  ansible.builtin.assert:
+    that:
+      - workstation_op_version.rc == 0
+    fail_msg: >-
+      '{{ workstation_op_cli }} --version' failed.
+      Finish the 1Password guide for flavor={{ workstation_1password_flavor }},
+      unlock the desktop app, ensure CLI integration is enabled, then re-run.
+      (WSL: use Windows op.exe — do not install Linux 1password-cli.)
+
+- name: Report op CLI version
+  ansible.builtin.debug:
+    msg: "1Password CLI OK: {{ workstation_op_version.stdout | trim }}"
