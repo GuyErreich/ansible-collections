@@ -16,3 +16,4 @@ ignore: |
   .github/workflows/
   .github/actions/
   auto_semver_config.yml
+  collections/ansible_collections/community/

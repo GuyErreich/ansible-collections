@@ -83,12 +83,6 @@ class CallbackModule(DefaultCallback):
             self._display.display(f"{border}\n", color=color)
             # self._display.display(">>> DEBUG: END", color=color)
 
-        try:
-                f.write("== Message Output START ==\n")
-                f.write(f"{result._result.get('msg')}\n")
-                f.write("== Message Output END ==\n")
-        except Exception as e:
-            pass
 
     def v2_runner_on_ok(self, result):
         is_changed = result._result.get('changed', False)
