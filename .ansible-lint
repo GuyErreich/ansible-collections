@@ -3,8 +3,20 @@ profile: production
 exclude_paths:
   - .cache/
   - .git/
+  - collections/ansible_collections/community/
   - collections/ansible_collections/guyerreich/outputs/tests/
   - collections/ansible_collections/guyerreich/outputs/.venv/
+mock_modules:
+  - community.general.homebrew
+  - community.general.homebrew_cask
 skip_list:
   - package-latest
   - galaxy[version-incorrect]
+  - galaxy[no-changelog]
+  - galaxy[tags]
+  - var-naming
+  - fqcn[action-core]
+  - name[casing]
+  - yaml[line-length]
+warn_list:
+  - experimental

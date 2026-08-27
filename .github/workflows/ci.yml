@@ -61,7 +61,7 @@ jobs:
         run: yamllint -c .yamllint .
 
       - name: Ansible-lint
-        run: ansible-lint --offline --profile production
+        run: ansible-lint --offline --profile production playbooks collections/ansible_collections/guyerreich
 
       - name: Playbook syntax check
         run: ansible-playbook --syntax-check playbooks/bootstrap.yml

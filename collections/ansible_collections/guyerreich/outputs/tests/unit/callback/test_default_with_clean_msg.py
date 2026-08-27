@@ -1,4 +1,6 @@
 import pytest
+from ansible.plugins.callback.default import CallbackModule as DefaultCallback
+
 from plugins.callback.default_with_clean_msg import CallbackModule, C
 
 
@@ -15,13 +17,16 @@ def test_is_only_msg_false(fake_result):
     assert plugin._is_only_msg(result) is False
 
 
-@pytest.mark.parametrize("status, expected_color", [
-    ("ok", C.COLOR_OK),
-    ("changed", C.COLOR_CHANGED),
-    ("failed", C.COLOR_ERROR),
-    ("skipped", C.COLOR_SKIP),
-    ("unreachable", C.COLOR_UNREACHABLE),
-])
+@pytest.mark.parametrize(
+    "status, expected_color",
+    [
+        ("ok", C.COLOR_OK),
+        ("changed", C.COLOR_CHANGED),
+        ("failed", C.COLOR_ERROR),
+        ("skipped", C.COLOR_SKIP),
+        ("unreachable", C.COLOR_UNREACHABLE),
+    ],
+)
 def test_result_color(fake_result, status, expected_color):
     plugin = CallbackModule()
     result = fake_result(status=status)
@@ -44,28 +49,29 @@ def test_print_clean_msg_box_formatting(fake_result, mocker):
 def test_only_msg_suppresses_verbose_output(fake_result, mocker):
     plugin = CallbackModule()
     plugin._display = mocker.MagicMock()
+    super_ok = mocker.patch.object(DefaultCallback, "v2_runner_on_ok")
 
     result = fake_result(msg="hello", status="ok")
     plugin._display.verbosity = 0
 
     plugin.v2_runner_on_ok(result)
 
+    super_ok.assert_not_called()
     display_calls = [c.args[0] for c in plugin._display.display.call_args_list]
     assert any("Message Output" in c for c in display_calls)
-    assert not any("=>" in c for c in display_calls)  # no JSON dump
 
 
 def test_verbose_mode_includes_json_output(fake_result, mocker):
     plugin = CallbackModule()
     plugin._display = mocker.MagicMock()
+    super_ok = mocker.patch.object(DefaultCallback, "v2_runner_on_ok")
 
     result = fake_result(msg="hello", status="ok")
     plugin._display.verbosity = 2
 
     plugin.v2_runner_on_ok(result)
 
-    display_calls = [c.args[0] for c in plugin._display.display.call_args_list]
-    assert any("=>" in c for c in display_calls)
+    super_ok.assert_called_once_with(result)
 
 
 def test_clean_msg_empty(fake_result, mocker):
@@ -75,5 +81,4 @@ def test_clean_msg_empty(fake_result, mocker):
     result = fake_result(msg="", status="ok")
     plugin._print_clean_msg(result)
 
-    # No calls expected since msg is empty
     assert plugin._display.display.call_count == 0
