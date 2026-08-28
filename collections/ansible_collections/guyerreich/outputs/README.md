@@ -10,6 +10,14 @@ This collection is a thin subclass of Ansible's default callback (`ansible.plugi
 ansible-galaxy collection install guyerreich.outputs
 ```
 
+## Quick test
+
+```bash
+ansible-galaxy collection install guyerreich.outputs
+export ANSIBLE_STDOUT_CALLBACK=guyerreich.outputs.default_with_clean_msg
+ansible localhost -m debug -a 'msg="line one\nline two"' -c local
+```
+
 ## Usage
 
 In `ansible.cfg`:

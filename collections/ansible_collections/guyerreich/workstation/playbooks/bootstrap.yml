@@ -1,14 +1,17 @@
 ---
 # Bootstrap a local workstation (macOS, Ubuntu, or WSL).
 #
-# Monorepo dev (in-tree collections via ansible.cfg):
-#   ansible-galaxy collection install -r requirements.yml
-#   ansible-playbook playbooks/bootstrap.yml
-#
-# Galaxy users (no clone): see guyerreich.workstation README —
+# Install from Galaxy, then run by playbook FQCN (no git clone required):
+#   ansible-galaxy collection install guyerreich.workstation
 #   ansible-playbook guyerreich.workstation.bootstrap
 #
-# Canonical playbook source: collections/.../guyerreich/workstation/playbooks/bootstrap.yml
+# Non-interactive (example):
+#   ansible-playbook guyerreich.workstation.bootstrap \
+#     -e onepassword_skip_guide=true \
+#     -e @examples/extra-vars.yml
+#
+# Partial re-run:
+#   ansible-playbook guyerreich.workstation.bootstrap --tags shell,git
 
 - name: Bootstrap workstation
   hosts: localhost

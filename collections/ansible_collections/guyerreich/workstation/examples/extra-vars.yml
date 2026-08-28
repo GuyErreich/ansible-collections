@@ -1,0 +1,26 @@
+---
+# Placeholder extra-vars for non-interactive runs.
+# Copy to extra-vars.yml (gitignored) and replace placeholders.
+# Never put resolved secret values in this file — only op:// references.
+
+# Non-interactive (CI / re-runs).
+onepassword_skip_guide: false
+workstation_skip_signing_prompt: true
+
+# GitHub PAT secret reference used by git credential helper and the gh() wrapper.
+op_github_token_ref: "op://Personal/GitHub PAT/token"
+
+# Optional identity (leave unset to skip or answer pause prompts).
+# workstation_git_user_name: "Your Name"
+# workstation_git_user_email: "you@example.com"
+# Or resolve from 1Password (values never written to the repo):
+# workstation_git_user_name_ref: "op://Personal/Identity/name"
+# workstation_git_user_email_ref: "op://Personal/Identity/email"
+
+# Commit signing: skip | ssh | gpg
+# workstation_git_signing: skip
+# workstation_git_signing_key_ref: "op://Personal/SSH Key/public key"
+# workstation_git_gpg_key_id: "YOURKEYID"
+
+# Offer to remove Linux /usr/bin/op on WSL (shadows op.exe).
+# onepassword_remove_linux_op: true

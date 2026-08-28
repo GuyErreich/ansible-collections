@@ -9,13 +9,33 @@ Monorepo for Ansible Galaxy collections under the **`guyerreich`** namespace:
 
 Each collection is licensed independently (see its `galaxy.yml` and `LICENSE`). The repo root has no single license.
 
-## Install from Ansible Galaxy
+## Use from Ansible Galaxy
+
+Install published collections (no git clone):
 
 ```bash
 ansible-galaxy collection install guyerreich.workstation guyerreich.outputs
 ```
 
+**Workstation** — bundled bootstrap playbook:
+
+```bash
+ansible-playbook guyerreich.workstation.bootstrap --tags verify
+ansible-playbook guyerreich.workstation.bootstrap
+```
+
+**Outputs** — set the stdout callback in `ansible.cfg` or:
+
+```bash
+export ANSIBLE_STDOUT_CALLBACK=guyerreich.outputs.default_with_clean_msg
+ansible localhost -m debug -a 'msg="hello"' -c local
+```
+
+See each collection’s README for tags, extra-vars, and options.
+
 ## Develop locally
+
+Clone this repo when changing collections or running CI:
 
 ```bash
 git clone https://github.com/GuyErreich/ansible-collections.git
@@ -24,7 +44,7 @@ ansible-galaxy collection install -r requirements.yml
 ansible-playbook playbooks/bootstrap.yml
 ```
 
-`ansible.cfg` sets `collections_paths = ./collections` so the in-tree collections are used without a prior `ansible-galaxy collection install` of local paths.
+`ansible.cfg` sets `collections_path = ./collections` so the in-tree collections are used without a prior `ansible-galaxy collection install` of local paths.
 
 ## Releases
 
